@@ -1,2 +1,7 @@
 left1.png
 right1.png
+xright2.png
+xright3.png
+xleft2.png
+xleft3.png
+mouth1.png

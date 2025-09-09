@@ -1,3 +1,4 @@
+#define SDL_HINT_APP_NAME "HELLO ROBOT"
 #define SDL_MAIN_USE_CALLBACKS 1
 #define P1_MAX_EYES 32
 
@@ -14,6 +15,7 @@ static int eyeCount = 0;
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 	// App Setup
     SDL_SetAppMetadata("DES255 Project 1", "1.0.0", "dev.frykman.des255-p1");
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, "HELLO ROBOT");
 
 	if(argc < 2) {
 		printf("include a directory of png eyes as the argument\n");
@@ -79,6 +81,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 	if(event->type == SDL_EVENT_QUIT) {
+		return SDL_APP_SUCCESS;
+	}
+	if(event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
 		return SDL_APP_SUCCESS;
 	}
 	return SDL_APP_CONTINUE;

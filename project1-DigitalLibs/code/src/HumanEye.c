@@ -14,7 +14,7 @@ HumanEye* newEye(const char* imagePath) {
     HumanEye* eye = (HumanEye*)malloc(sizeof(HumanEye));
     
     // TODO: implement rolling titles
-    eye->window = SDL_CreateWindow("HELLO", eyeImg->w, eyeImg->h, 0);
+    eye->window = SDL_CreateWindow("", eyeImg->w, eyeImg->h, SDL_WINDOW_NOT_FOCUSABLE);
 
     // Put the eye in the window
     SDL_Surface* wSurface = SDL_GetWindowSurface(eye->window);

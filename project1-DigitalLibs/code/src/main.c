@@ -5,11 +5,13 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
-static SDL_Window *leftwindow = NULL;
-static SDL_Renderer *leftrenderer = NULL;
+typedef struct wrp_t {
+	SDL_Window* window;
+	SDL_Renderer* renderer;
+} HumanEye;
 
-static SDL_Window *rightwindow = NULL;
-static SDL_Renderer *rightrenderer = NULL;
+static HumanEye** windows;
+int numWindows = 0;
 
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
     SDL_SetAppMetadata("DES255 Project 1", "1.0.0", "dev.frykman.des255-p1");
@@ -26,6 +28,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
 	// TODO: load in the list of eyes
 	
+/*
     if(!SDL_CreateWindowAndRenderer("HELLO", 800, 600, 0, &leftwindow, &leftrenderer)) {
         SDL_Log("SDL window creation failed! %s", SDL_GetError());
         return SDL_APP_FAILURE;
@@ -35,11 +38,14 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
         SDL_Log("SDL window creation failed! %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
-    
+*/
     return SDL_APP_CONTINUE;
 }
 
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
+	if(event->type == SDL_EVENT_QUIT) {
+		return SDL_APP_SUCCESS;
+	}
 	return SDL_APP_CONTINUE;
 }
 

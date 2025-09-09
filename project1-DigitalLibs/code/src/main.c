@@ -1,14 +1,12 @@
 #define SDL_MAIN_USE_CALLBACKS 1
+#define P1_MAX_EYES 32
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
-typedef struct wrp_t {
-	SDL_Window* window;
-	SDL_Renderer* renderer;
-} HumanEye;
+#include "HumanEye.h"
 
 static HumanEye** windows;
 int numWindows = 0;
@@ -27,7 +25,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
     }
 
 	// TODO: load in the list of eyes
-	
+	newEye("../eyes/left1.png");
 /*
     if(!SDL_CreateWindowAndRenderer("HELLO", 800, 600, 0, &leftwindow, &leftrenderer)) {
         SDL_Log("SDL window creation failed! %s", SDL_GetError());

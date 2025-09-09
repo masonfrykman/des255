@@ -1,6 +1,6 @@
 project('Digital Tools & Libraries - DES 255', 'c')
 
-main_sources = ['src/main.c']
+main_sources = ['src/main.c', 'src/HumanEye.c']
 
 sdl_dep = dependency('sdl3')
 sdl_img_dep = dependency('sdl3-image')

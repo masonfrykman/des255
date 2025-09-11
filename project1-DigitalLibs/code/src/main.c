@@ -45,23 +45,26 @@ int main(int argc, char* argv[]) {
         // the pos is the origin / center of the node.
         int x, y;
         x = rand() % (IMAGE_WIDTH_PIXELS - 200) + 100;
-        y = rand() % (IMAGE_HEIGHT_PIXELS - 2000) + 200;
+        y = rand() % IMAGE_HEIGHT_PIXELS;
 
         // randomize the color of the nodes
-        double red, g, b;
+        double red, g, b, a;
         red = (double)(rand() % 1000) / 1000;
         g = (double)(rand() % 1000) / 1000;
         b = (double)(rand() % 1000) / 1000;
-        printf("%f %f %f\n", red, g, b);
+        a = (double)(rand() % 1000) / 1000;
+        printf("%f %f %f %f\n", red, g, b, a);
 
         
 
         // draw the circles around the node
         cairo_new_path(c);
-        for(int r = NODE_CIRC_SPACE_BETWEEN; r < IMAGE_WIDTH_PIXELS; r += NODE_CIRC_SPACE_BETWEEN) {
+        int lw = (rand() % 15) + 1;
+        for(int r = NODE_CIRC_SPACE_BETWEEN; r < NODE_CIRC_SPACE_BETWEEN * 13; r += NODE_CIRC_SPACE_BETWEEN) {
             
             cairo_arc(c, x, y, r, 0, M_PI * 2);
-            cairo_set_source_rgb(c, red, g, b); // TODO: do cool colors based on each node
+            cairo_set_source_rgba(c, red, g, b, a); // TODO: do cool colors based on each node
+            cairo_set_line_width(c, lw);
             cairo_stroke(c);
         }
 

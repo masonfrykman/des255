@@ -47,19 +47,29 @@ int main(int argc, char* argv[]) {
         x = rand() % (IMAGE_WIDTH_PIXELS - 200) + 100;
         y = rand() % (IMAGE_HEIGHT_PIXELS - 2000) + 200;
 
-        // draw the node's little square
-        cairo_new_path(c);
-        cairo_rectangle(c, x - (NODE_SIZE_PIXELS / 2), y - (NODE_SIZE_PIXELS / 2), NODE_SIZE_PIXELS, NODE_SIZE_PIXELS);
-        cairo_set_source_rgb(c, 0, 0, 0); // TODO: do cool colors based on each node
-        cairo_fill(c);
+        // randomize the color of the nodes
+        double red, g, b;
+        red = (double)(rand() % 1000) / 1000;
+        g = (double)(rand() % 1000) / 1000;
+        b = (double)(rand() % 1000) / 1000;
+        printf("%f %f %f\n", red, g, b);
+
+        
 
         // draw the circles around the node
         cairo_new_path(c);
         for(int r = NODE_CIRC_SPACE_BETWEEN; r < IMAGE_WIDTH_PIXELS; r += NODE_CIRC_SPACE_BETWEEN) {
             
             cairo_arc(c, x, y, r, 0, M_PI * 2);
+            cairo_set_source_rgb(c, red, g, b); // TODO: do cool colors based on each node
             cairo_stroke(c);
         }
+
+        // draw the node's little square
+        cairo_new_path(c);
+        cairo_rectangle(c, x - (NODE_SIZE_PIXELS / 2), y - (NODE_SIZE_PIXELS / 2), NODE_SIZE_PIXELS, NODE_SIZE_PIXELS);
+        cairo_set_source_rgb(c, red, g, b); // TODO: do cool colors based on each node
+        cairo_fill(c);
     }
 
     // Write the surface to final PNG

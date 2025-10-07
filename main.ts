@@ -26,13 +26,13 @@ const model = gltf.scene;
 console.log(scene);
 
 var frameCounter = 0;
-const tickEvery = 5;
+const tickEvery = 1;
 
 const lineMaterial = new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(0.5, 0.5, 0.5)})
 var lastLineVector: THREE.Vector3 = new THREE.Vector3(1, 1, 1);
 
 function tick() {
-    var newLineVector = new THREE.Vector3(lastLineVector.x * -1, (lastLineVector.y * -1.2) % 60, lastLineVector.z * -1.01);
+    var newLineVector = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
 
     var buffGeo = new THREE.BufferGeometry().setFromPoints([lastLineVector, newLineVector]);
     
@@ -61,4 +61,11 @@ function animate(){
     renderer.render(scene,camera);
     frameCounter++;
 }
+
+window.addEventListener("keydown", (ev) => {
+    if(ev.code == "KeyC") {
+        scene.children = [];
+    }
+})
+
 renderer.setAnimationLoop(animate);

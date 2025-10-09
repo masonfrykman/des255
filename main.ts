@@ -16,12 +16,14 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
 const hemiLight = new THREE.HemisphereLight(0xffffff,0x444444,3);
-scene.add(hemiLight);
+
+const lightbulb = new THREE.PointLight(0xff00000, 1, 0);
+lightbulb.position.set(23, 23, 23);
 
 const gltfLoader = new GLTFLoader();
 const gltf = await gltfLoader.loadAsync('assets/loofa.glb')
 const model = gltf.scene;
-// scene.add(model);
+scene.add(model);
 
 console.log(scene);
 
@@ -96,12 +98,21 @@ function tick() {
         }
     }
     origins = newOrigins;
-    window.origins = origins; // for debugging
+    // window.origins = origins; // for debugging
 }
 
-function makeTree(origin: THREE.Vector3, lastUsedAngle: number, length: number, iter: number, angleInc: number, zAngleDeg: number) {
+function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc: number, zAngleDeg: number) {
     //console.log("makeTree: " + origin + ", " + lastUsedAngle + ", " + length + ", " + iter);
-    if(iter >= 10) return
+    if(iter >= 8) {
+        // draw the loofa at the end of the branch
+        var cap = new THREE.Object3D();
+        cap.copy(model);
+        model.scale.set(5, 5, 5)
+
+        cap.position.set(origin.x, origin.y, origin.z);
+        scene.add(cap);
+        return
+    }
 
     // make two new origins, one at a 75 degree angle and one at a 105 angle from the X axis.
 
@@ -200,15 +211,19 @@ function makeTree(origin: THREE.Vector3, lastUsedAngle: number, length: number, 
     scene.add(line);
 
     // Recursively make new origins.
-    makeTree(vec, angleDeg, length, iter + 1, angleInc, zAngleDeg);
+    //makeTree(vec, length, iter + 1, angleInc * 2, zAngleDeg + 5);
+    makeTree(vec, length / 1.09, iter + 1, Math.random() * 180, Math.random() * 360);
+    makeTree(vec, length / 1.09, iter + 1, Math.random() * 180, Math.random() * 360);
+    //makeTree(vec, length, iter + 1, angleInc * 2, Math.random() * 360);
+    //makeTree(vec, length, iter + 1, angleInc + 4, zAngleDeg * 2);
 }
 
-var angleInc = 0;
+var angleInc = 90;
 var zAngleInc = 0;
 
 function ntick() {
-    var beginningOrigin = new THREE.Vector3(0, 0, 0);
-    makeTree(beginningOrigin, 0, 1, 0, 25, zAngleInc);
+    var beginningOrigin = new THREE.Vector3(0, 2, 0);
+    makeTree(beginningOrigin, 1, 2, angleInc, zAngleInc);
 }
 
 function showCoordPlane() {
@@ -222,22 +237,23 @@ function showCoordPlane() {
 }
 
 var paused = false;
+var showPlaneLines = true;
 
 function animate(){
     controls.update();
 
     if(frameCounter % tickEvery == 0 && !paused) {
-        angleInc++;
-        zAngleInc++;
         scene.clear();
-        console.log(angleInc);
-        showCoordPlane();
         ntick();
+        scene.add(hemiLight)
+        console.log(angleInc);
     }
-
+    if(showPlaneLines) showCoordPlane();
     renderer.render(scene,camera);
     frameCounter++;
 }
+
+
 
 window.addEventListener("keydown", (ev) => {
     if(ev.code == "KeyC") {
@@ -245,11 +261,12 @@ window.addEventListener("keydown", (ev) => {
     } else if(ev.code == "KeyP") {
         paused = !paused;
         console.log(paused ? "PAUSED" : "UNPAUSED")
+    } else if(ev.code == "KeyL") {
+        showPlaneLines = !showPlaneLines;
     }
 })
 
 showCoordPlane()
-ntick();
 renderer.setAnimationLoop(animate);
 
 window.mainScene = scene;

@@ -99,13 +99,15 @@ function tick() {
     window.origins = origins; // for debugging
 }
 
-function makeTree(origin: THREE.Vector3, lastUsedAngle: number, length: number, iter: number, angleInc: number, fudgedZ: number) {
+function makeTree(origin: THREE.Vector3, lastUsedAngle: number, length: number, iter: number, angleInc: number, zAngleDeg: number) {
     //console.log("makeTree: " + origin + ", " + lastUsedAngle + ", " + length + ", " + iter);
     if(iter >= 10) return
 
     // make two new origins, one at a 75 degree angle and one at a 105 angle from the X axis.
 
     // Solving a right triangle here ugh
+
+    // calculation of (x, y) plane
     var a, b, c;
     var angleA = angleInc; // will be radians DO NOT PASS THIS AS A PARAMETER THAT SHOULD BE DEGREES
     while(angleA >= 360) { // handle coterminals
@@ -118,12 +120,16 @@ function makeTree(origin: THREE.Vector3, lastUsedAngle: number, length: number, 
     a = c * Math.sin(angleA);
     b = Math.sqrt(Math.pow(c, 2) - Math.pow(a, 2));
 
+    var x = origin.x;
+    var y = origin.y;
+    var z = origin.z;
+    
+
     // the b side becomes the extension of the origin x coordinate
     // the a side becomes the extension of the origin y coordinate.
     // a, b, and c will ALWAYS be positive, the angle is going to determine the negativity of the extensions.
     
-    var x = origin.x;
-    var y = origin.y;
+    
 
     var xExtensionFactor = b;
     var yExtensionFactor = a;
@@ -152,24 +158,57 @@ function makeTree(origin: THREE.Vector3, lastUsedAngle: number, length: number, 
         x += xExtensionFactor; // note: i had to flip the -= to +=, idk why but it works
     }
 
-    var z = 0; // dealing with Z later.
-
     // Draw a line from the old origin to the new origin
+
+    var zA, zB, zC;
+    var zAngle1T = zAngleDeg;
+    while(zAngle1T >= 360) {
+        zAngle1T -= 360;
+    }
+    
+    var zAngleRad = (zAngle1T * Math.PI) / 180;
+    zC = length;
+    zA = zC * Math.sin(zAngleRad);
+    zB = Math.sqrt(Math.pow(zC, 2) - Math.pow(zA, 2));
+    
+    if(zAngleRad == 0) {
+        //x += length;
+    } else if(zAngleRad > 0 && zAngleRad < 90) {
+        //x += zB;
+        z += zA;
+    } else if(zAngleRad == 90) {
+        z += length;
+    } else if(zAngleRad > 90 && zAngleRad < 180) {
+        //x -= zB;
+        z += zA;
+    } else if(zAngleRad == 180) {
+        //x -= length;
+    } else if(zAngleRad > 180 && zAngleRad < 270) {
+        //x -= zA;
+        z -= zB;
+    } else if(zAngleRad == 270) {
+        z -= length;
+    } else {
+        //x += zB;
+        z -= zA;
+    }
+
     var vec = new THREE.Vector3(x, y, z);
+
     var geo = new THREE.BufferGeometry().setFromPoints([origin, vec]);
     var line = new THREE.Line(geo, new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(Math.random(), Math.random(), Math.random())}));
     scene.add(line);
 
     // Recursively make new origins.
-    makeTree(vec, angleDeg, length, iter + 1, angleInc, z);
-    //makeTree(vec, angleA, length, iter + 1, angleInc + 1, z);
+    makeTree(vec, angleDeg, length, iter + 1, angleInc, zAngleDeg);
 }
 
 var angleInc = 0;
+var zAngleInc = 0;
 
 function ntick() {
     var beginningOrigin = new THREE.Vector3(0, 0, 0);
-    makeTree(beginningOrigin, 0, 1, 0, angleInc, 0);
+    makeTree(beginningOrigin, 0, 1, 0, 25, zAngleInc);
 }
 
 function showCoordPlane() {
@@ -189,6 +228,7 @@ function animate(){
 
     if(frameCounter % tickEvery == 0 && !paused) {
         angleInc++;
+        zAngleInc++;
         scene.clear();
         console.log(angleInc);
         showCoordPlane();

@@ -1,0 +1,12 @@
+body {
+    font-family: "Helvetica", "Helvetica Neue", "Arial", sans-serif;
+}
+
+h1 {
+    font-size: 24pt;
+}
+
+#chin {
+    display: flex;
+    margin: 5pt;
+}

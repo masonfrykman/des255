@@ -3,17 +3,25 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 const w = window.innerWidth;
-const h = window.innerHeight;
+const h = 600;
+
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75,w/h,0.1,500);
-camera.position.z = 3;
+const camera = new THREE.PerspectiveCamera(95,w/h,0.1,1000);
+
+camera.position.x = 4;
+camera.position.z = 4;
+camera.position.y = 1;
 
 const renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setSize(w,h);
-document.body.appendChild(renderer.domElement);
+document.getElementById("tree-view")?.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+controls.enableZoom = true;
+controls.enablePan = false;
+
+controls.minDistance = 5;
 
 const hemiLight = new THREE.HemisphereLight(0xffffff,0x444444,3);
 
@@ -23,7 +31,6 @@ lightbulb.position.set(23, 23, 23);
 const gltfLoader = new GLTFLoader();
 const gltf = await gltfLoader.loadAsync('assets/loofa.glb')
 const model = gltf.scene;
-scene.add(model);
 
 console.log(scene);
 
@@ -32,76 +39,10 @@ const tickEvery = 2;
 
 const lineMaterial = new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(0.5, 0.5, 0.5)})
 export var origins: THREE.Vector3[] = [new THREE.Vector3(1, 1, 0)]
-var negFlip = true;
-
-const branchesPerOrigin = 2;
-const branchLength = 0.5;
-
-var iter = 0;
-
-function tick() {
-    // make new lines
-    iter++;
-    var newOrigins: THREE.Vector3[] = []
-    for(const origin of origins) {
-        for(var x = 0; x < branchesPerOrigin; x++) {
-            
-            // use fuckass matrix math to calculate the new coordinates.
-            var angle = 15;
-            negFlip = !negFlip;
-
-            if(negFlip) { 
-                angle = 345;
-            }
-            /*
-
-            [ a  b ]  *  [ x ]  =  [ax + by]
-            [ c  d ]  *  [ y ]  =  [cx + dy]
-
-            */
-
-            var nnY = origin.y + 0.1
-            var newX, newY;
-
-            /*
-            if(negFlip) {
-                newX = (Math.cos(angle) * (origin.x + branchLength)) + (Math.sin(angle) * nnY)
-                newY = (-1 * Math.sin(angle) * (origin.x + branchLength)) + (Math.cos(angle) * nnY);
-            } else {
-            //    newX = (Math.cos(angle) * origin.x + 0.5) + (Math.sin(angle) * nnY * -1)
-            //    newY = (Math.sin(angle) * origin.x + 0.5) + (Math.cos(angle) * nnY + 0.5);
-                newX = (Math.cos(angle) * (origin.x + branchLength)) + (-1 * Math.sin(angle) * nnY)
-                newY = (Math.sin(angle) * (origin.x + branchLength)) + (Math.cos(angle) * nnY);
-            }
-            */
-            /*
-            newX = origin.x + (origin.x - origin.x) * Math.cos(angle) - (origin.y + 0.5 - origin.y) * Math.sin(angle);
-            newY = origin.y + (origin.x - origin.x) * Math.sin(angle) + (origin.y + 0.5 - origin.y) * Math.cos(angle);
-
-            */
-
-            newX = origin.x + (negFlip ? 0.2 : -0.2) * iter;
-            newY = origin.y + (negFlip ? 0.5 : -0.5) * iter;
-
-            var newOrigin = new THREE.Vector3(newX, newY, 0);
-            
-            console.log(newOrigin);
-
-            
-            
-            var newLineGeo = new THREE.BufferGeometry().setFromPoints([origin, newOrigin]);
-            var newLine = new THREE.Line(newLineGeo, lineMaterial);
-            
-            
-            newOrigins.push(newOrigin);
-            scene.add(newLine);
-        }
-    }
-    origins = newOrigins;
-    // window.origins = origins; // for debugging
-}
 
 function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc: number, zAngleDeg: number) {
+    if(angleInc < 0 || zAngleDeg < 0) return
+
     //console.log("makeTree: " + origin + ", " + lastUsedAngle + ", " + length + ", " + iter);
     if(iter >= 8) {
         // draw the loofa at the end of the branch
@@ -222,7 +163,7 @@ var angleInc = 90;
 var zAngleInc = 0;
 
 function ntick() {
-    var beginningOrigin = new THREE.Vector3(0, 2, 0);
+    var beginningOrigin = new THREE.Vector3(0, -2, 0);
     makeTree(beginningOrigin, 1, 2, angleInc, zAngleInc);
 }
 
@@ -236,12 +177,11 @@ function showCoordPlane() {
     scene.add(new THREE.Line(z, new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(0, 0, 1)})))
 }
 
-var paused = false;
+var paused = true;
 var showPlaneLines = true;
 
 function animate(){
     controls.update();
-
     if(frameCounter % tickEvery == 0 && !paused) {
         scene.clear();
         ntick();
@@ -252,8 +192,6 @@ function animate(){
     renderer.render(scene,camera);
     frameCounter++;
 }
-
-
 
 window.addEventListener("keydown", (ev) => {
     if(ev.code == "KeyC") {
@@ -266,7 +204,5 @@ window.addEventListener("keydown", (ev) => {
     }
 })
 
-showCoordPlane()
 renderer.setAnimationLoop(animate);
-
 window.mainScene = scene;

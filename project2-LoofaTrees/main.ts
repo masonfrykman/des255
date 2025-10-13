@@ -25,7 +25,7 @@ controls.enablePan = false;
 controls.minDistance = 5;
 controls.maxDistance = 8;
 
-const hemiLight = new THREE.HemisphereLight(0xffffff,0x444444,3);
+const hemiLight = new THREE.HemisphereLight(0x37a9fc,0x444444,3);
 
 const lightbulb = new THREE.PointLight(0xff00000, 1, 0);
 lightbulb.position.set(23, 23, 23);
@@ -35,6 +35,13 @@ const gltf = await gltfLoader.loadAsync('assets/loofa.glb')
 const model = gltf.scene;
 
 console.log(scene);
+
+const ground = new THREE.BoxGeometry(300, 0, 300)
+const groundMtr = new THREE.MeshBasicMaterial( { color: 0x50bb50})
+
+const groundMesh = new THREE.Mesh(ground, groundMtr)
+groundMesh.translateY(-2)
+scene.add(groundMesh)
 
 var frameCounter = 0;
 const tickEvery = 2;
@@ -242,4 +249,5 @@ scene.add(coordPlane)
 showCoordPlane();
 scene.add(tree)
 
+renderer.setClearColor(0x37a9fc, 1)
 renderer.setAnimationLoop(animate);

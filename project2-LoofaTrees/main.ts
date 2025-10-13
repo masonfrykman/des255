@@ -4,6 +4,8 @@ import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { generateTree, tree} from './tree.ts'
 
+// MARK: Scene setup
+
 const w = window.innerWidth;
 const h = 600;
 
@@ -44,6 +46,23 @@ const groundMesh = new THREE.Mesh(ground, groundMtr)
 groundMesh.translateY(-2)
 scene.add(groundMesh)
 
+async function saveTreeAsGLTF() {
+    var gExp = new GLTFExporter()
+    var exportData = await gExp.parseAsync(tree, { binary: true })
+    var exportBlob = new Blob([exportData as ArrayBuffer]);
+    var downloadElem = document.createElement("a");
+    downloadElem.href = window.URL.createObjectURL(exportBlob)
+    downloadElem.download = "tree.glb"
+    document.body.appendChild(downloadElem);
+    downloadElem.click()
+    window.URL.revokeObjectURL(downloadElem.href)
+    downloadElem.remove()
+}
+
+// MARK: Lifecycle fns
+
+var showPlaneLines = true;
+
 const coordPlane: THREE.Group = new THREE.Group()
 
 function showCoordPlane() {
@@ -60,21 +79,6 @@ function hideCoordPlane() {
     coordPlane.clear()
 }
 
-async function saveTreeAsGLTF() {
-    var gExp = new GLTFExporter()
-    var exportData = await gExp.parseAsync(tree, { binary: true })
-    var exportBlob = new Blob([exportData as ArrayBuffer]);
-    var downloadElem = document.createElement("a");
-    downloadElem.href = window.URL.createObjectURL(exportBlob)
-    downloadElem.download = "tree.glb"
-    document.body.appendChild(downloadElem);
-    downloadElem.click()
-    window.URL.revokeObjectURL(downloadElem.href)
-    downloadElem.remove()
-}
-
-var showPlaneLines = true;
-
 function animate(){
     controls.update();
     renderer.render(scene,camera);
@@ -89,6 +93,8 @@ function init() {
     renderer.setClearColor(0x37a9fc, 1)
     renderer.setAnimationLoop(animate); // -> animate()
 }
+
+// MARK: Event Listeners
 
 window.addEventListener("keydown", async (ev) => {
     if(ev.code == "KeyC") {

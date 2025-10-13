@@ -4,9 +4,13 @@ var origins: THREE.Vector3[] = [new THREE.Vector3(1, 1, 0)]
 export const tree: THREE.Group = new THREE.Group();
 
 function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc: number, zAngleDeg: number, leafModel: THREE.Group) {
-    if(angleInc < 0 || zAngleDeg < 0) return
+    if(angleInc < 0
+        || zAngleDeg < 0
+        || angleInc > 180
+        || zAngleDeg < 0
+    ) return
 
-    //console.log("makeTree: " + origin + ", " + lastUsedAngle + ", " + length + ", " + iter);
+    // MARK: Place leaf
     if(iter >= 8) {
         // draw the loofa at the end of the branch
         var cap = new THREE.Object3D();
@@ -44,7 +48,7 @@ function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc:
     // the a side becomes the extension of the origin y coordinate.
     // a, b, and c will ALWAYS be positive, the angle is going to determine the negativity of the extensions.
     
-    
+    // MARK: X-Y movement
 
     var xExtensionFactor = b;
     var yExtensionFactor = a;
@@ -73,7 +77,7 @@ function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc:
         x += xExtensionFactor; // note: i had to flip the -= to +=, idk why but it works
     }
 
-    // Draw a line from the old origin to the new origin
+    // MARK: Z movement
 
     var zA, zB, zC;
     var zAngle1T = zAngleDeg;
@@ -108,18 +112,16 @@ function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc:
         z -= zA;
     }
 
-    var vec = new THREE.Vector3(x, y, z);
+    // MARK: Push to scene
 
+    var vec = new THREE.Vector3(x, y, z);
     var geo = new THREE.BufferGeometry().setFromPoints([origin, vec]);
     var line = new THREE.Line(geo, new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(Math.random(), Math.random(), Math.random())}));
     tree.add(line);
 
     // Recursively make new origins.
-    //makeTree(vec, length, iter + 1, angleInc * 2, zAngleDeg + 5);
     makeTree(vec, length / 1.09, iter + 1, Math.random() * 180, Math.random() * 360, leafModel);
     makeTree(vec, length / 1.09, iter + 1, Math.random() * 180, Math.random() * 360, leafModel);
-    //makeTree(vec, length, iter + 1, angleInc * 2, Math.random() * 360);
-    //makeTree(vec, length, iter + 1, angleInc + 4, zAngleDeg * 2);
 }
 
 export function generateTree(leaf: THREE.Group) {

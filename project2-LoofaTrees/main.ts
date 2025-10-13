@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 const w = window.innerWidth;
@@ -22,6 +23,7 @@ controls.enableZoom = true;
 controls.enablePan = false;
 
 controls.minDistance = 5;
+controls.maxDistance = 8;
 
 const hemiLight = new THREE.HemisphereLight(0xffffff,0x444444,3);
 
@@ -37,8 +39,9 @@ console.log(scene);
 var frameCounter = 0;
 const tickEvery = 2;
 
-const lineMaterial = new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(0.5, 0.5, 0.5)})
 export var origins: THREE.Vector3[] = [new THREE.Vector3(1, 1, 0)]
+
+const tree: THREE.Group = new THREE.Group();
 
 function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc: number, zAngleDeg: number) {
     if(angleInc < 0 || zAngleDeg < 0) return
@@ -51,7 +54,7 @@ function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc:
         model.scale.set(5, 5, 5)
 
         cap.position.set(origin.x, origin.y, origin.z);
-        scene.add(cap);
+        tree.add(cap);
         return
     }
 
@@ -149,7 +152,7 @@ function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc:
 
     var geo = new THREE.BufferGeometry().setFromPoints([origin, vec]);
     var line = new THREE.Line(geo, new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(Math.random(), Math.random(), Math.random())}));
-    scene.add(line);
+    tree.add(line);
 
     // Recursively make new origins.
     //makeTree(vec, length, iter + 1, angleInc * 2, zAngleDeg + 5);
@@ -163,18 +166,38 @@ var angleInc = 90;
 var zAngleInc = 0;
 
 function ntick() {
+    tree.clear();
     var beginningOrigin = new THREE.Vector3(0, -2, 0);
     makeTree(beginningOrigin, 1, 2, angleInc, zAngleInc);
 }
+
+const coordPlane: THREE.Group = new THREE.Group()
 
 function showCoordPlane() {
     var x = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(200, 0, 0)]);
     var y = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 200, 0)]);
     var z = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 200)]);
 
-    scene.add(new THREE.Line(x, new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(1, 0, 0)})))
-    scene.add(new THREE.Line(y, new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(0, 1, 0)})))
-    scene.add(new THREE.Line(z, new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(0, 0, 1)})))
+    coordPlane.add(new THREE.Line(x, new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(1, 0, 0)})))
+    coordPlane.add(new THREE.Line(y, new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(0, 1, 0)})))
+    coordPlane.add(new THREE.Line(z, new THREE.LineBasicMaterial({color: new THREE.Color().setRGB(0, 0, 1)})))
+}
+
+function hideCoordPlane() {
+    coordPlane.clear()
+}
+
+async function saveTreeAsGLTF() {
+    var gExp = new GLTFExporter()
+    var exportData = await gExp.parseAsync(tree, { binary: true })
+    var exportBlob = new Blob([exportData as ArrayBuffer]);
+    var downloadElem = document.createElement("a");
+    downloadElem.href = window.URL.createObjectURL(exportBlob)
+    downloadElem.download = "tree.glb"
+    document.body.appendChild(downloadElem);
+    downloadElem.click()
+    window.URL.revokeObjectURL(downloadElem.href)
+    downloadElem.remove()
 }
 
 var paused = true;
@@ -182,27 +205,41 @@ var showPlaneLines = true;
 
 function animate(){
     controls.update();
-    if(frameCounter % tickEvery == 0 && !paused) {
-        scene.clear();
-        ntick();
-        scene.add(hemiLight)
-        console.log(angleInc);
-    }
-    if(showPlaneLines) showCoordPlane();
     renderer.render(scene,camera);
     frameCounter++;
 }
 
-window.addEventListener("keydown", (ev) => {
+window.addEventListener("keydown", async (ev) => {
     if(ev.code == "KeyC") {
         scene.children = [];
     } else if(ev.code == "KeyP") {
         paused = !paused;
         console.log(paused ? "PAUSED" : "UNPAUSED")
     } else if(ev.code == "KeyL") {
-        showPlaneLines = !showPlaneLines;
+        if(showPlaneLines) {
+            hideCoordPlane();
+            showPlaneLines = false;
+            return
+        }
+        showCoordPlane();
+        showPlaneLines = true;
+    } else if(ev.code == "KeyN") {
+        ntick();
+    } else if(ev.code == "KeyS") {
+        await saveTreeAsGLTF()
     }
 })
 
+window.addEventListener("resize", (ev) => {
+    renderer.setSize(window.innerWidth, 600, true)
+    camera.aspect = window.innerWidth / 600
+})
+
+// Constructs the main elements of the scene
+ntick();
+scene.add(hemiLight)
+scene.add(coordPlane)
+showCoordPlane();
+scene.add(tree)
+
 renderer.setAnimationLoop(animate);
-window.mainScene = scene;

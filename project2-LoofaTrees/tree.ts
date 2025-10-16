@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-var origins: THREE.Vector3[] = [new THREE.Vector3(1, 1, 0)]
 export const tree: THREE.Group = new THREE.Group();
 
 function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc: number, zAngleDeg: number, leafModel: THREE.Group) {
@@ -16,9 +15,12 @@ function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc:
         var cap = new THREE.Object3D();
         cap.copy(leafModel);
         leafModel.scale.set(5, 5, 5)
+        
 
         cap.position.set(origin.x, origin.y, origin.z);
         tree.add(cap);
+        cap.castShadow = true
+        cap.receiveShadow = true
         return
     }
 
@@ -126,6 +128,6 @@ function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc:
 
 export function generateTree(leaf: THREE.Group) {
     tree.clear();
-    var beginningOrigin = new THREE.Vector3(0, -2, 0);
+    var beginningOrigin = new THREE.Vector3(0, 0, 0);
     makeTree(beginningOrigin, 1, 2, 90, 0, leaf);
 }

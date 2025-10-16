@@ -1,5 +1,8 @@
 body {
     font-family: "Helvetica", "Helvetica Neue", "Arial", sans-serif;
+    color: black;
+    padding: 0;
+    margin: 0;
 }
 
 h1 {
@@ -9,4 +12,44 @@ h1 {
 #chin {
     display: flex;
     margin: 5pt;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    background-color: rgb(99, 212, 159);
+    width: 100%;
+    margin: 0;
+    padding: 10pt;
+    align-items: center;
+}
+
+#chin * {
+    margin-right: 12pt;
+}
+
+#chin button {
+    background-color: rgb(23, 50, 37);
+    color: white;
+    font-weight: 900;
+    border: 3pt solid rgb(23, 50, 37);
+    height: 25pt;
+    border-radius: 12pt;
+    padding-left: 10pt;
+    padding-right: 10pt;
+}
+
+#chin button.hover-enabled {
+    cursor: pointer;
+}
+
+@keyframes button-hoveranim {
+    0% {background-color: rgb(23, 50, 37);}
+    100% {background-color: white;}
+}
+
+#chin button.hover-enabled:hover {
+    background-color: white;
+    animation-name: button-hoveranim;
+    animation-timing-function: ease-in-out;
+    animation-duration: 200ms;
+    color: black;
 }

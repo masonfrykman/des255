@@ -2,56 +2,57 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { generateTree, tree} from './tree.ts'
-
+import { generateTree, tree } from './tree.ts'
 // MARK: Scene setup
 
-const w = window.innerWidth;
-const h = 600;
-
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(95,w/h,0.1,1000);
 
-camera.position.x = 4;
-camera.position.z = 4;
-camera.position.y = 1;
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 1000);
 
-const renderer = new THREE.WebGLRenderer({antialias: true});
-renderer.setSize(w,h);
+function updateCameraPos() {
+    camera.position.x = 0;
+    camera.position.z = 20 - (20 / window.innerWidth);
+    camera.position.y = 4;
+}
+updateCameraPos()
+
+const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true, alpha: true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
 document.getElementById("tree-view")?.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enableZoom = true;
 controls.enablePan = false;
-
 controls.minDistance = 5;
 controls.maxDistance = 8;
+controls.target = new THREE.Vector3(0, camera.position.y / 2, 0)
 
-const hemiLight = new THREE.HemisphereLight(0x37a9fc,0x444444,3);
+const skyColor = 0x37a9fc
+const groundColor = 0xaaffaa
 
-const lightbulb = new THREE.PointLight(0xff00000, 1, 0);
-lightbulb.position.set(23, 23, 23);
+scene.background = new THREE.Color(skyColor)
+
+const dLight = new THREE.DirectionalLight(skyColor, 1)
+dLight.castShadow = true
+dLight.shadow.mapSize = new THREE.Vector2(1024, 1024)
 
 const gltfLoader = new GLTFLoader();
 const gltf = await gltfLoader.loadAsync('assets/loofa.glb')
 const model = gltf.scene;
 
-console.log(scene);
-
 const ground = new THREE.BoxGeometry(300, 0, 300)
-const groundMtr = new THREE.MeshBasicMaterial( { color: 0x50bb50})
-
+const groundMtr = new THREE.MeshLambertMaterial({ color: groundColor })
 const groundMesh = new THREE.Mesh(ground, groundMtr)
-groundMesh.translateY(-2)
 scene.add(groundMesh)
 
-async function saveTreeAsGLTF() {
-    var gExp = new GLTFExporter()
-    var exportData = await gExp.parseAsync(tree, { binary: true })
-    var exportBlob = new Blob([exportData as ArrayBuffer]);
+// MARK: Export funs
+
+function saveBlob(blob: Blob) {
     var downloadElem = document.createElement("a");
-    downloadElem.href = window.URL.createObjectURL(exportBlob)
+    downloadElem.href = window.URL.createObjectURL(blob)
     downloadElem.download = "tree.glb"
     document.body.appendChild(downloadElem);
     downloadElem.click()
@@ -59,9 +60,21 @@ async function saveTreeAsGLTF() {
     downloadElem.remove()
 }
 
+async function saveTreeAsGLTF() {
+    var gExp = new GLTFExporter()
+    var exportData = await gExp.parseAsync(tree, { binary: true })
+    var exportBlob = new Blob([exportData as ArrayBuffer])
+    saveBlob(exportBlob)
+}
+
+function saveScreenshot() {
+    const canvas = renderer.domElement
+    canvas.toBlob((blob) => blob != null ? saveBlob(blob) : null);
+}
+
 // MARK: Lifecycle fns
 
-var showPlaneLines = true;
+var showPlaneLines = false;
 
 const coordPlane: THREE.Group = new THREE.Group()
 
@@ -81,25 +94,58 @@ function hideCoordPlane() {
 
 function animate(){
     controls.update();
+    dLight.shadow.camera.near = camera.near;
+    dLight.shadow.camera.far = camera.far;
+    dLight.shadow.camera.updateProjectionMatrix()
+    
     renderer.render(scene,camera);
 }
 
 function init() {
     generateTree(model)
-    scene.add(hemiLight)
+    scene.add(dLight)
     scene.add(coordPlane)
-    showCoordPlane();
+    if(showPlaneLines) showCoordPlane();
     scene.add(tree)
-    renderer.setClearColor(0x37a9fc, 1)
+    //renderer.setClearColor(0x37a9fc, 1)
+
+    ground.computeVertexNormals()
+
     renderer.setAnimationLoop(animate); // -> animate()
 }
 
 // MARK: Event Listeners
 
-window.addEventListener("keydown", async (ev) => {
-    if(ev.code == "KeyC") {
-        scene.children = [];
-    } else if(ev.code == "KeyL") {
+window.addEventListener("resize", (ev) => {
+    renderer.setSize(window.innerWidth, window.innerHeight, true)
+    updateCameraPos()
+    camera.aspect = window.innerWidth / window.innerHeight
+    camera.updateProjectionMatrix() // https://stackoverflow.com/questions/20290402/three-js-resizing-canvas
+})
+
+
+init()
+
+// MARK: Once Loaded
+
+if(document.getElementById("btn-export") != null) {
+    document.getElementById("btn-export")!.addEventListener("click", async (ev) => await saveTreeAsGLTF());
+    document.getElementById("btn-export")!.classList.add("hover-enabled")
+}
+
+if(document.getElementById("btn-screenshot") != null) {
+    document.getElementById("btn-screenshot")!.addEventListener("click", (ev) => saveScreenshot())
+    document.getElementById("btn-screenshot")!.classList.add("hover-enabled")
+}
+
+if(document.getElementById("btn-new") != null) {
+    document.getElementById("btn-new")!.addEventListener("click", (ev) => generateTree(model))
+    document.getElementById("btn-new")!.classList.add("hover-enabled")
+}
+
+// Publish debug functions
+window.debug = new class {
+    togglePlaneLines() {
         if(showPlaneLines) {
             hideCoordPlane();
             showPlaneLines = false;
@@ -107,16 +153,9 @@ window.addEventListener("keydown", async (ev) => {
         }
         showCoordPlane();
         showPlaneLines = true;
-    } else if(ev.code == "KeyN") {
-        generateTree(model)
-    } else if(ev.code == "KeyS") {
-        await saveTreeAsGLTF()
     }
-})
 
-window.addEventListener("resize", (ev) => {
-    renderer.setSize(window.innerWidth, 600, true)
-    camera.aspect = window.innerWidth / 600
-})
-
-init()
+    clear() {
+        scene.children = [];
+    }
+}

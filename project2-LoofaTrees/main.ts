@@ -3,13 +3,11 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { generateTree, tree } from './tree.ts'
-// MARK: Scene setup
 
+// MARK: Scene setup
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 1000);
-
-
 
 const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true, alpha: true});
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -23,6 +21,7 @@ controls.enableZoom = true;
 controls.enablePan = false;
 controls.minDistance = 5;
 controls.maxDistance = 8;
+controls.maxPolarAngle = Math.PI / 2 + 0.225;
 
 function updateCameraPos() {
     camera.position.x = 0;
@@ -34,7 +33,6 @@ updateCameraPos()
 
 const skyColor = 0x37a9fc
 const groundColor = 0xaaffaa
-
 scene.background = new THREE.Color(skyColor)
 
 const dLight = new THREE.DirectionalLight(skyColor, 1)
@@ -52,10 +50,10 @@ scene.add(groundMesh)
 
 // MARK: Export funs
 
-function saveBlob(blob: Blob) {
+function saveBlob(blob: Blob, name: string) {
     var downloadElem = document.createElement("a");
     downloadElem.href = window.URL.createObjectURL(blob)
-    downloadElem.download = "tree.glb"
+    downloadElem.download = name
     document.body.appendChild(downloadElem);
     downloadElem.click()
     window.URL.revokeObjectURL(downloadElem.href)
@@ -66,12 +64,12 @@ async function saveTreeAsGLTF() {
     var gExp = new GLTFExporter()
     var exportData = await gExp.parseAsync(tree, { binary: true })
     var exportBlob = new Blob([exportData as ArrayBuffer])
-    saveBlob(exportBlob)
+    saveBlob(exportBlob, "tree.glb")
 }
 
 function saveScreenshot() {
     const canvas = renderer.domElement
-    canvas.toBlob((blob) => blob != null ? saveBlob(blob) : null);
+    canvas.toBlob((blob) => blob != null ? saveBlob(blob, "tree.png") : null);
 }
 
 // MARK: Lifecycle fns
@@ -109,7 +107,6 @@ function init() {
     scene.add(coordPlane)
     if(showPlaneLines) showCoordPlane();
     scene.add(tree)
-    //renderer.setClearColor(0x37a9fc, 1)
 
     ground.computeVertexNormals()
 
@@ -128,7 +125,7 @@ window.addEventListener("resize", (ev) => {
 
 init()
 
-// MARK: Once Loaded
+// MARK: During drawing
 
 if(document.getElementById("btn-export") != null) {
     document.getElementById("btn-export")!.addEventListener("click", async (ev) => await saveTreeAsGLTF());

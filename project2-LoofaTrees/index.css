@@ -3,6 +3,7 @@ body {
     color: black;
     padding: 0;
     margin: 0;
+    overflow: hidden;
 }
 
 h1 {
@@ -18,7 +19,8 @@ h1 {
     background-color: rgb(99, 212, 159);
     width: 100%;
     margin: 0;
-    padding: 10pt;
+    padding: 15pt;
+    height: 35pt;
     align-items: center;
 }
 

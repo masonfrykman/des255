@@ -24,11 +24,9 @@ function makeTree(origin: THREE.Vector3, length: number, iter: number, angleInc:
         return
     }
 
-    // make two new origins, one at a 75 degree angle and one at a 105 angle from the X axis.
-
     // Solving a right triangle here ugh
 
-    // calculation of (x, y) plane
+    // MARK: Calculation of (x, y) plane
     var a, b, c;
     var angleA = angleInc; // will be radians DO NOT PASS THIS AS A PARAMETER THAT SHOULD BE DEGREES
     while(angleA >= 360) { // handle coterminals

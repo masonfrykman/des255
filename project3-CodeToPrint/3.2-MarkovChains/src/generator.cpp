@@ -7,19 +7,21 @@
 #include <fstream>
 #include <sstream>
 #include <random>
+#include <ctime>
 
 std::unordered_map<std::string, std::vector<std::pair<std::string, long>>> relations;
 std::stringstream finalString;
 
-#define MODEL_PATH "../out/analysis.model"
-#define MODEL_FEASIBILITY_FLOOR 5
+std::string cfg_model;
+int cfg_floor = 0;
 
-#define PROMPT_PATH "../configuration/prompt.txt"
+std::string cfg_prompt = "";
 
-#define OUTPUT_PATH "../out/chain.txt"
+std::string cfg_output = "chain.txt";
 
-#define FIRST_WORD "i"
-#define WORDS_TO_GENERATE 210
+std::string cfg_firstWord;
+bool cfg_wantsPrune = true;
+int cfg_wordsToGenerate = -1;
 
 void loadRelation(std::string line) {
     std::stringstream lineStream(line);
@@ -83,9 +85,9 @@ void nextWord(std::string left, std::string& right) {
 }
 
 void createString() {
-    finalString << FIRST_WORD << " ";
-    std::string currentWord = FIRST_WORD;
-    for(int words = 1; words < WORDS_TO_GENERATE; words++) {
+    finalString << cfg_firstWord << " ";
+    std::string currentWord = cfg_firstWord;
+    for(int words = 1; words < cfg_wordsToGenerate; words++) {
         std::string nwOutput;
         nextWord(currentWord, nwOutput);
         finalString << nwOutput << " ";
@@ -103,7 +105,7 @@ void pruneForFeasibility() {
                 i--;
                 count++;
             }
-            else if(vec.at(i).second < MODEL_FEASIBILITY_FLOOR) {
+            else if(vec.at(i).second < cfg_floor) {
                 vec.erase(vec.begin() + i);
                 i--;
                 count++;
@@ -124,9 +126,119 @@ void seed(std::string usingStr) {
     std::srand(col);
 }
 
-int main() {
+void printUsage() {
+    std::cout 
+    << "Markov chain generator" << std::endl
+    << "Usage:" << std::endl
+        << "\t--firstWord <word>" << std::endl
+        << "\t--model <path>" << std::endl
+        << "\t--no-prune" << std::endl
+        << "\t--floor <int >= 0>" << std::endl
+        << "\t--prompt <string>" << std::endl
+        << "\t--out <path>" << std::endl
+        << "\t--help" << std::endl;
+}
+
+// Arguments:
+//  --firstWord <word> (required)
+//  --model <path> (required)
+//  --length <int>
+//  --no-prune
+//  --floor <int>
+//  --prompt <prompt>
+//  --out <path>
+//  --help
+void parseArguments(int argc, char* argv[]) {
+    if(argc == 1) {
+        printUsage();
+        exit(1);
+    }
+    for(int i = 1; i < argc; i++) {
+        std::string currentFlag = std::string(argv[i]);
+        if(currentFlag == "--help") {
+            printUsage();
+            exit(0);
+        } else if(currentFlag == "--firstWord") {
+            if(i + 1 >= argc) {
+                std::cerr << "ERROR: --firstWord flag must be followed by an argument." << std::endl;
+                exit(1);
+            }
+            cfg_firstWord = argv[i+1];
+            i++;
+        } else if(currentFlag == "--no-prune") {
+            cfg_wantsPrune = false;
+        } else if(currentFlag == "--floor") {
+            if(i + 1 >= argc) {
+                std::cerr << "ERROR: --floor flag must be followed by an integer." << std::endl;
+                exit(1);
+            }
+            try {
+                cfg_floor = std::stoi(std::string(argv[i+1]));
+            } catch(std::invalid_argument err) {
+                std::cerr << "ERROR: --floor flag argument is not an integer." << std::endl;
+                exit(1);
+            } catch(std::out_of_range oErr) {
+                std::cerr << "ERROR: --floor flag argument is too big." << std::endl;
+                exit(1);
+            }
+            i++;
+        } else if(currentFlag == "--prompt") {
+            if(i + 1 >= argc) {
+                std::cerr << "ERROR: --prompt flag must be followed by a string." << std::endl;
+                exit(1);
+            }
+
+            cfg_prompt = std::string(argv[i+1]);
+            i++;
+        } else if(currentFlag == "--out") {
+            if(i + 1 >= argc) {
+                std::cerr << "ERROR: --out flag must be followed by a string." << std::endl;
+                exit(1);
+            }
+
+            cfg_output = std::string(argv[i+1]);
+            i++;
+        } else if(currentFlag == "--model") {
+            if(i + 1 >= argc) {
+                std::cerr << "ERROR: --model flag must be followed by a path leading to the model file." << std::endl;
+                exit(1);
+            }
+
+            cfg_model = std::string(argv[i+1]);
+            i++;
+        } else if(currentFlag == "--length") {
+            if(i + 1 >= argc) {
+                std::cerr << "ERROR: --wordsToGenerate flag must be followed by an integer." << std::endl;
+                exit(1);
+            }
+            try {
+                cfg_wordsToGenerate = std::stoi(std::string(argv[i+1]));
+            } catch(std::invalid_argument err) {
+                std::cerr << "ERROR: --wordsToGenerate flag argument is not an integer." << std::endl;
+                exit(1);
+            } catch(std::out_of_range oErr) {
+                std::cerr << "ERROR: --wordsToGenerate flag argument is too big." << std::endl;
+                exit(1);
+            }
+            i++;
+        } else {
+            std::cerr << "WARNING: unrecognized flag '" << currentFlag << "'. Ignoring." << std::endl;
+        }
+    }
+}
+
+int main(int argc, char* argv[]) {
+    // Parse CLI arguments
+    parseArguments(argc, argv);
+
+    // Check required values
+    if(cfg_firstWord.empty() || cfg_model.empty() || cfg_wordsToGenerate == -1) {
+        std::cerr << "ERROR: --firstWord, --model, & --length flags are required to be defined." << std::endl;
+        exit(1);
+    }
+
     // Read in the relations from the provided model
-    std::ifstream model(MODEL_PATH);
+    std::ifstream model(cfg_model);
     if(!model.good()) {
         std::cerr << "Failed to open the model." << std::endl;
         return 1;
@@ -142,42 +254,41 @@ int main() {
     }
 
     // Prune the model based on a floor of relations
-    std::cout << "Got model, pruning..." << std::endl;
+    std::cout << "Got model";
 
-    pruneForFeasibility();
+    if(cfg_wantsPrune) {
+        std::cout << ", pruning..." << std::endl;
+        pruneForFeasibility();
+    } else {
+        std::cout << "." << std::endl;
+    }
 
     // Seed the random number generator based on a prompt
-    std::cout << "Loading prompt..." << std::endl;
+    std::cout << "Seeding with prompt.." << std::endl;
 
-    std::ifstream promptFile(PROMPT_PATH);
-    if(!promptFile.good()) {
-        std::cerr << "WARNING: couldn't open prompt file. proceeding without a prompt." << std::endl;
-    }
-
-    std::stringstream prompt;
-    std::string pl;
-    while(std::getline(promptFile, pl)) {
-        prompt << pl;
-    }
-
-    seed(prompt.str());
+    seed(cfg_prompt);
 
     // Create the chain
     std::cout << "Creating chain..." << std::endl;
 
-    if(relations.count(FIRST_WORD) == 0) {
-        std::cerr << "'" << FIRST_WORD << "' does not appear in the model." << std::endl;
+    if(relations.count(cfg_firstWord) == 0) {
+        std::cerr << "'" << cfg_firstWord << "' does not appear in the model." << std::endl;
         return 1;
     }
 
+    auto tStart = std::chrono::system_clock::now();
     createString();
+    auto tEnd = std::chrono::system_clock::now();
+
+    auto duration = std::chrono::duration<double>(tEnd - tStart);
+    std::cout << "Finished in " << duration.count() << "s." << std::endl;
 
     model.close();
 
     // Write the chain to a file.
-    std::ofstream out(OUTPUT_PATH);
+    std::ofstream out(cfg_output);
     if(!out.good()) {
-        std::cerr << "Failed to write to path '" << OUTPUT_PATH << "'." << std::endl;
+        std::cerr << "Failed to write to path '" << cfg_output << "'." << std::endl;
         return 1;
     }
     out << finalString.str() << std::endl;

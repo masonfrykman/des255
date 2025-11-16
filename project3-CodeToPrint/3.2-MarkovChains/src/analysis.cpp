@@ -6,9 +6,9 @@
 #include <utility>
 #include <vector>
 
-#define DICTIONARY_PATH "../asset/dictionary.txt"
-const std::string ASSET_PATH_PREFIX = "../asset/";
-const std::string CONFIG_PATH_PREFIX ="../configuration/";
+std::string cfg_dictPath = "";
+std::string cfg_analysisOrderPath = "";
+std::string cfg_modelOutputPath = "";
 
 std::unordered_set<std::string> dictionary;
 std::unordered_map<std::string, std::vector<std::pair<std::string, long>>> relations;
@@ -102,11 +102,68 @@ void analyzeFile(std::string path) {
     return;
 }
 
+void printUsage() {
+    std::cout 
+    << "Markov chain generator" << std::endl
+    << "Usage:" << std::endl
+        << "\t--out <path>" << std::endl
+            << "\t\tpath to write the final model file to." << std::endl
+            << "\t\tdefault: analysis.model" << std::endl
+        << "\t--dictionary <path>" << std::endl
+        << "\t--dataset <path>" << std::endl
+            << "\t\tpath to file containing paths to the documents included in the dataset." << std::endl;
+}
+
+// Arguments:
+//  --out <path> (default: analysis.model)
+//  --dictionary <path> (required)
+//  --dataset <path> (required)
+//  --help
+void parseArguments(int argc, char* argv[]) {
+    if(argc == 1) {
+        printUsage();
+        exit(1);
+    }
+    for(int i = 1; i < argc; i++) {
+        std::string currentFlag = std::string(argv[i]);
+        if(currentFlag == "--help") {
+            printUsage();
+            exit(0);
+        } else if(currentFlag == "--out") {
+            if(i + 1 >= argc) {
+                std::cerr << "ERROR: --out must be followed by a path." << std::endl;
+            }
+            cfg_modelOutputPath = argv[i+1];
+            i++;
+        } else if(currentFlag == "--dictionary") {
+            if(i + 1 >= argc) {
+                std::cerr << "ERROR: --dictionary must be followed by a path." << std::endl;
+            }
+            cfg_dictPath = argv[i+1];
+            i++;
+        } else if(currentFlag == "--dataset") {
+            if(i + 1 >= argc) {
+                std::cerr << "ERROR: --dataset must be followed by a path." << std::endl;
+            }
+            cfg_analysisOrderPath = argv[i+1];
+            i++;
+        }
+    }
+}
+
 int main(int argc, char* argv[]) {
+    parseArguments(argc, argv);
+
+    // Check required arguments.
+    if(cfg_dictPath.empty() || cfg_analysisOrderPath.empty()) {
+        std::cerr << "ERROR: --dictionary and --dataset must be defined as arguments." << std::endl;
+        return 1;
+    }
+
     // Open the dictionary
-    std::ifstream dictFile(DICTIONARY_PATH);
+    std::ifstream dictFile(cfg_dictPath);
     if(!dictFile.good()) {
-        std::cerr << "Failed to open dictionary at '" << DICTIONARY_PATH << "'." << std::endl;
+        std::cerr << "Failed to open dictionary at '" << cfg_dictPath << "'." << std::endl;
         return 1;
     }
 
@@ -132,24 +189,28 @@ int main(int argc, char* argv[]) {
     */
 
     // Begin reading in and analyzing real bodies of text
-    std::ifstream readerList(CONFIG_PATH_PREFIX + "filesToAnalyze.txt");
+    std::ifstream readerList(cfg_analysisOrderPath);
     if(!readerList.good()) {
-        std::cerr << "Failed to open file at path '" << CONFIG_PATH_PREFIX << "/filesToAnalyze.txt' for reading." << std::endl;
+        std::cerr << "Failed to open file at path '" << cfg_analysisOrderPath << "' for reading." << std::endl;
         return 1;
     }
 
-    std::string suffix;
-    while(std::getline(readerList, suffix)) {
-        if(suffix.at(suffix.length() - 1) == '\n') {
-            suffix.erase(suffix.end() - 1);
+    std::string assetPath;
+    while(std::getline(readerList, assetPath)) {
+        if(assetPath.at(assetPath.length() - 1) == '\n') {
+            assetPath.erase(assetPath.end() - 1);
         }
-        std::string path = ASSET_PATH_PREFIX + suffix;
-        analyzeFile(path);
+        analyzeFile(assetPath);
     }
 
     readerList.close();
 
-    writeRelations("../out/analysis.model");
+    if(cfg_modelOutputPath.empty()) {
+        std::cerr << "WARNING: model output path not defined, defaulting to ./analysis.model" << std::endl;
+        cfg_modelOutputPath = "./analysis.model";
+    }
+
+    writeRelations(cfg_modelOutputPath);
 
     dictFile.close();
 

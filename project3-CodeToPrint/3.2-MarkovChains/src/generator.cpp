@@ -12,13 +12,11 @@
 std::unordered_map<std::string, std::vector<std::pair<std::string, long>>> relations;
 std::stringstream finalString;
 
+// Config variables
 std::string cfg_model;
 int cfg_floor = 0;
-
 std::string cfg_prompt = "";
-
 std::string cfg_output = "chain.txt";
-
 std::string cfg_firstWord;
 bool cfg_wantsPrune = true;
 int cfg_wordsToGenerate = -1;
